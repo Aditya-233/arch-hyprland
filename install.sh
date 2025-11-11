@@ -166,6 +166,10 @@ install_packages() {
         
         # Development
         base-devel
+        playerctl
+
+        # Broswer
+        firefox
     )
     
     print_info "Installing ${#OFFICIAL_PACKAGES[@]} official packages..."
@@ -178,6 +182,7 @@ install_packages() {
         swww
         swaync
         wlogout
+        visual-studio-code-bin
     )
     
     print_info "Installing ${#AUR_PACKAGES[@]} AUR packages..."
