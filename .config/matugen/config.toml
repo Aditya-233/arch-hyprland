@@ -30,15 +30,6 @@ output_path = '~/.config/gtk-4.0/colors.css'
 input_path = '~/.config/matugen/templates/rofi-colors.rasi'
 output_path = '~/.config/rofi/colors.rasi'
 
-[templates.cava]
-input_path = '~/.config/matugen/templates/matugen-cava'
-output_path = '~/.config/cava/config'
-post_hook = "pkill -USR1 cava"
-
-[templates.spicetify]
-input_path = '~/.config/matugen/templates/spotify-colors.ini'
-output_path = '~/.config/spicetify/Themes/text/color.ini'
-
 [templates.vesktop]
 input_path = '~/.config/matugen/templates/midnight-discord.css'
 output_path = '~/.config/vesktop/themes/matugen.css'

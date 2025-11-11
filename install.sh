@@ -49,9 +49,8 @@ sudo pacman -S --needed --noconfirm \
     thunar \
     nwg-look \
     playerctl \
-    cava \
     fastfetch \
-    gtk3 gtk4 cava spicetify-cli vesktop
+    gtk3 gtk4 cava
 
 # Step 4: Install fonts
 echo "[4/9] Installing fonts..."
@@ -63,7 +62,7 @@ sudo pacman -S --needed --noconfirm \
 
 # Step 5: Install Matugen (critical for this rice)
 echo "[5/9] Installing Matugen..."
-yay -S --needed --noconfirm --rebuild --nodiffmenu matugen-bin wlogout spicetify-cli vesktop-bin
+yay -S --needed --noconfirm --rebuild --nodiffmenu matugen-bin wlogout vesktop-bin
 
 # Step 6: Backup existing configs
 echo "[6/9] Backing up entire ~/.config directory..."

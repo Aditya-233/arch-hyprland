@@ -1,0 +1,108 @@
+@import "colors.css";
+
+* {
+    font-family: "JetBrainsMono Nerd Font Propo";
+    font-weight: bold;
+    min-height: 0;
+    font-size: 98%;
+    font-feature-settings: '"zero", "ss01", "ss02", "ss03", "ss04", "ss05", "cv31"';
+}
+
+window#waybar {
+    background-color: transparent;
+    padding: 0px;
+    border: 0px;
+}
+
+tooltip {
+    color: @inverse_surface;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 20px;
+}
+
+tooltip label {
+    color: @inverse_surface;
+}
+
+/* ---- Module Groups ---- */
+.modules-left {
+    background-color: rgba(0, 0, 0, 0.5);
+    color: @secondary;
+    border-radius: 20px;
+    padding: 2px 4px;
+}
+
+.modules-center {
+    background-color: rgba(0, 0, 0, 0.5);
+    color: @secondary;
+    border-radius: 20px;
+    padding: 2px 4px;
+}
+
+.modules-right {
+    background-color: rgba(0, 0, 0, 0.5);
+    color: @secondary;
+    border-radius: 20px;
+    padding: 2px 4px;
+}
+
+/* ---- Workspaces Styling ---- */
+#workspaces button {
+    color: @outline;
+    padding: 0px 4px;
+    border-radius: 9px;
+    transition: all 0.3s cubic-bezier(.55, -0.68, .48, 1.682);
+}
+
+#workspaces button:hover {
+    color: @on_secondary_fixed_variant;
+    border-radius: 20px;
+    padding: 0px 2px;
+}
+
+#workspaces button.active {
+    color: @inverse_surface;
+    padding: 0px 8px;
+}
+
+#workspaces button.urgent {
+    color: @on_secondary;
+    border-radius: 10px;
+}
+
+#workspaces button.persistent {
+    border-radius: 10px;
+}
+
+/* ---- Individual Modules ---- */
+#clock,
+#battery,
+#bluetooth,
+#network,
+#pulseaudio {
+    padding: 4px 6px;
+}
+
+/* ---- Status Indicators ---- */
+#pulseaudio.muted {
+    color: #cc3436;
+}
+
+#battery.critical:not(.charging) {
+    color: #f53c3c;
+    animation: blink 1s linear infinite;
+}
+
+#battery.warning:not(.charging) {
+    color: #f5a742;
+}
+
+#battery.good {
+    color: #39FF14;
+}
+
+@keyframes blink {
+    to {
+        color: #000000;
+    }
+}

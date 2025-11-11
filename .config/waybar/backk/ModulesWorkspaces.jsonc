@@ -111,9 +111,9 @@
 		"8":"Otto",
 		"9":"Nove",
 		"10":"Dieci"
-	}	
+	}
   },
-  
+
 //  NUMBERS and ICONS style
 "hyprland/workspaces#4": {
 	"format": "{name}",
@@ -190,7 +190,7 @@
 		"10": "J",
 	},
 },
-// NUMBERS and ICONS style with window rewrite 
+// NUMBERS and ICONS style with window rewrite
 "hyprland/workspaces#rw": {
 	"disable-scroll": true,
 	"all-outputs": true,
@@ -202,11 +202,11 @@
 	"on-scroll-down": "hyprctl dispatch workspace e-1",
 	"persistent-workspaces": {
 		"*": 5
-	  },
+	},
 	"format": "{icon} {windows}",
 	"format-window-separator": " ",
 	"window-rewrite-default": " ",
-	"window-rewrite": {		
+	"window-rewrite": {
 		"title<.*amazon.*>": " ",
 		"title<.*reddit.*>": " ",
 
@@ -279,7 +279,7 @@
 		"class<nwg-look>": " ",
 		"class<[Pp]avucontrol|org.pulseaudio.pavucontrol>": "󱡫 ",
 		"class<steam>": " ",
-		"class<thunar|nemo>": "󰝰 ",	
+		"class<thunar|nemo>": "󰝰 ",
     "class<Gparted>":"",
 		"class<gimp>": " ",
 		"class<emulator>": "📱 ",
