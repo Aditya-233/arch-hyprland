@@ -1,121 +1,414 @@
 #!/bin/bash
 
-# Exit on any error
-set -e
+# ============================================================================
+# Arch Hyprland Rice Installation Script
+# ============================================================================
+# This script will:
+# 1. Check if running Arch Linux
+# 2. Install all required packages
+# 3. Clone the dotfiles repository
+# 4. Backup existing configs
+# 5. Deploy configurations to proper locations
+# 6. Set up proper permissions
+# ============================================================================
 
-echo "=========================================="
-echo "Installing binnewbs Hyprland Rice"
-echo "=========================================="
+set -e  # Exit on error
 
-# Step 1: Update system
-echo "[1/9] Updating system..."
-sudo pacman -S --needed --noconfirm git base-devel
-sudo pacman -Syu --noconfirm
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
 
-# Step 2: Install yay (AUR helper) if not present
-echo "[2/9] Installing yay AUR helper..."
-if ! command -v yay &> /dev/null; then
+# Configuration
+REPO_URL="https://github.com/Aditya-233/arch-hyprland.git"
+REPO_NAME="arch-hyprland"
+BACKUP_DIR="$HOME/.config_backup_$(date +%Y%m%d_%H%M%S)"
+
+# ============================================================================
+# Helper Functions
+# ============================================================================
+
+print_header() {
+    echo -e "\n${MAGENTA}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${CYAN}$1${NC}"
+    echo -e "${MAGENTA}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+}
+
+print_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+ask_confirmation() {
+    while true; do
+        read -p "$1 [y/N]: " yn
+        case $yn in
+            [Yy]* ) return 0;;
+            [Nn]* ) return 1;;
+            "" ) return 1;;
+            * ) echo "Please answer yes or no.";;
+        esac
+    done
+}
+
+# ============================================================================
+# System Checks
+# ============================================================================
+
+check_system() {
+    print_header "System Check"
+
+    # Check if Arch Linux
+    if [ ! -f /etc/arch-release ]; then
+        print_error "This script is designed for Arch Linux only!"
+        exit 1
+    fi
+    print_success "Arch Linux detected"
+
+    # Check if running as root
+    if [ "$EUID" -eq 0 ]; then
+        print_error "Please do not run this script as root!"
+        exit 1
+    fi
+    print_success "Running as normal user"
+
+    # Check for required base tools
+    if ! command -v git &> /dev/null; then
+        print_warning "Git not found. Will install it first."
+        sudo pacman -S --needed --noconfirm git
+    fi
+    print_success "Git available"
+}
+
+# ============================================================================
+# Package Installation
+# ============================================================================
+
+install_yay() {
+    print_header "Installing AUR Helper (yay)"
+
+    if command -v yay &> /dev/null; then
+        print_success "yay already installed"
+        return
+    fi
+
+    print_info "Installing yay..."
     cd /tmp
     git clone https://aur.archlinux.org/yay.git
     cd yay
     makepkg -si --noconfirm
-    cd ~
-fi
+    cd ..
+    rm -rf yay
+    print_success "yay installed successfully"
+}
 
-# Step 3: Install core Hyprland dependencies
-echo "[3/9] Installing Hyprland and core dependencies..."
-sudo pacman -S --needed --noconfirm \
-    hyprland \
-    kitty \
-    foot \
-    waybar \
-    rofi \
-    swaync \
-    grim \
-    slurp \
-    wl-clipboard \
-    cliphist \
-    polkit-kde-agent \
-    xdg-desktop-portal-hyprland \
-    qt5-wayland \
-    qt6-wayland \
-    pavucontrol \
-    brightnessctl \
-    bluez \
-    bluez-utils \
-    blueman \
-    network-manager-applet \
-    gvfs \
-    thunar \
-    nwg-look \
-    playerctl \
-    fastfetch \
-    gtk3 gtk4 cava
+install_packages() {
+    print_header "Installing Required Packages"
 
-# Step 4: Install fonts
-echo "[4/9] Installing fonts..."
-sudo pacman -S --needed --noconfirm \
-    ttf-font-awesome \
-    ttf-jetbrains-mono-nerd \
-    noto-fonts \
-    noto-fonts-emoji
+    # Update system first
+    print_info "Updating system..."
+    sudo pacman -Syu --noconfirm
 
-# Step 5: Install Matugen (critical for this rice)
-echo "[5/9] Installing Matugen..."
-yay -S --needed --noconfirm --rebuild --nodiffmenu matugen-bin wlogout vesktop-bin
+    # Official repository packages
+    OFFICIAL_PACKAGES=(
+        # Core Hyprland
+        hyprland
+        hyprlock
+        hypridle
+        xdg-desktop-portal-hyprland
+        xdg-desktop-portal-gtk
 
-# Step 6: Backup existing configs
-echo "[6/9] Backing up entire ~/.config directory..."
-BACKUP_DIR=~/.config_backup_$(date +%Y%m%d_%H%M%S)
-mkdir -p "$BACKUP_DIR"
-cp -r ~/.config/* "$BACKUP_DIR/" 2>/dev/null || true
-echo "Backup saved to: $BACKUP_DIR"
+        # Wayland support
+        qt5-wayland
+        qt6-wayland
 
-# Step 7: Clone dotfiles repository with wallpapers
-echo "[7/9] Cloning dotfiles repository with wallpapers..."
-cd /tmp
-rm -rf arch-hyprland
-git clone https://github.com/binnewbs/arch-hyprland.git
-cd arch-hyprland
+        # Terminals
+        foot
+        kitty
 
-# Step 8: Install dotfiles and wallpapers
-echo "[8/9] Installing dotfiles and wallpapers..."
+        # Essential utilities
+        nautilus
+        rofi
+        waybar
+        wlogout
 
-echo "Copying configuration files..."
-cp -r .config/* ~/.config/
+        # Network & Bluetooth
+        networkmanager
+        nm-applet
+        bluez
+        bluez-utils
+        blueman
 
-echo "Copying .zshrc to home directory..."
-cp .zshrc ~/.zshrc
+        # Audio
+        pipewire
+        pipewire-pulse
+        pipewire-alsa
+        wireplumber
+        pamixer
 
-echo "Copying wallpapers to ~/Pictures/Wallpapers..."
-mkdir -p ~/Pictures/Wallpapers
-cp -r wallpapers/* ~/Pictures/Wallpapers/
-echo "Wallpapers copied successfully!"
+        # System utilities
+        brightnessctl
+        grim
+        slurp
+        wl-clipboard
+        cliphist
+        rfkill
 
-# Make scripts executable
-echo "Making scripts executable..."
-chmod +x ~/.config/hypr/scripts/* ~/.config/waybar/scripts/* 2>/dev/null || true
+        # Fonts
+        ttf-jetbrains-mono-nerd
+        noto-fonts
+        noto-fonts-emoji
+        ttf-font-awesome
 
-# Step 9: Generate initial color scheme with Matugen
-echo "[9/9] Setting up color scheme and wallpaper..."
+        # Icons & Themes
+        papirus-icon-theme
+        kvantum
 
-# Initialize swww daemon
-swww init 2>/dev/null || swww-daemon &
-sleep 2
+        # Shell & Tools
+        zsh
+        fastfetch
 
-# Find first wallpaper and apply it
-FIRST_WALLPAPER=$(find ~/Pictures/Wallpapers -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) | head -n 1)
+        # Development
+        base-devel
+    )
 
-echo "Generating color scheme from: $FIRST_WALLPAPER"
-matugen image "$FIRST_WALLPAPER"
+    print_info "Installing official packages..."
+    sudo pacman -S --needed --noconfirm "${OFFICIAL_PACKAGES[@]}"
+    print_success "Official packages installed"
 
-echo "Setting wallpaper..."
-swww img "$FIRST_WALLPAPER" --transition-type fade --transition-duration 2
+    # AUR packages
+    AUR_PACKAGES=(
+        matugen
+        swww
+        swaync
+        hyprpolkitagent
+        colloid-icon-theme-git
+        cava
+    )
 
-echo "✅ Color scheme and wallpaper applied successfully!"
+    print_info "Installing AUR packages..."
+    yay -S --needed --noconfirm "${AUR_PACKAGES[@]}"
+    print_success "AUR packages installed"
+}
 
-echo ""
-echo "=========================================="
-echo "✓ Installation Complete!"
-echo "=========================================="
-echo ""
+# ============================================================================
+# Repository Cloning
+# ============================================================================
+
+clone_repository() {
+    print_header "Cloning Repository"
+
+    local clone_dir="$HOME/$REPO_NAME"
+
+    if [ -d "$clone_dir" ]; then
+        print_warning "Repository already exists at $clone_dir"
+        if ask_confirmation "Do you want to remove it and re-clone?"; then
+            rm -rf "$clone_dir"
+        else
+            print_info "Using existing repository"
+            return
+        fi
+    fi
+
+    print_info "Cloning repository to $clone_dir..."
+    git clone "$REPO_URL" "$clone_dir"
+    print_success "Repository cloned successfully"
+}
+
+# ============================================================================
+# Configuration Backup & Deployment
+# ============================================================================
+
+backup_existing_configs() {
+    print_header "Backing Up Existing Configurations"
+
+    local configs_to_backup=(
+        ".config/hypr"
+        ".config/waybar"
+        ".config/rofi"
+        ".config/kitty"
+        ".config/swaync"
+        ".config/wlogout"
+        ".config/fastfetch"
+        ".config/matugen"
+        ".zshrc"
+    )
+
+    local backup_needed=false
+    for config in "${configs_to_backup[@]}"; do
+        if [ -e "$HOME/$config" ]; then
+            backup_needed=true
+            break
+        fi
+    done
+
+    if [ "$backup_needed" = false ]; then
+        print_info "No existing configurations to backup"
+        return
+    fi
+
+    print_info "Creating backup directory: $BACKUP_DIR"
+    mkdir -p "$BACKUP_DIR"
+
+    for config in "${configs_to_backup[@]}"; do
+        if [ -e "$HOME/$config" ]; then
+            print_info "Backing up $config..."
+            local parent_dir=$(dirname "$config")
+            mkdir -p "$BACKUP_DIR/$parent_dir"
+            cp -r "$HOME/$config" "$BACKUP_DIR/$config"
+        fi
+    done
+
+    print_success "Backup created at: $BACKUP_DIR"
+}
+
+deploy_configs() {
+    print_header "Deploying Configurations"
+
+    local repo_dir="$HOME/$REPO_NAME"
+
+    if [ ! -d "$repo_dir" ]; then
+        print_error "Repository not found at $repo_dir"
+        exit 1
+    fi
+
+    print_info "Creating config directories..."
+    mkdir -p "$HOME/.config"
+    mkdir -p "$HOME/Pictures/wallpapers"
+
+    # Copy .config directories
+    print_info "Copying configuration files..."
+    cp -r "$repo_dir/.config/"* "$HOME/.config/"
+
+    # Copy wallpapers
+    if [ -d "$repo_dir/wallpapers" ]; then
+        print_info "Copying wallpapers..."
+        cp -r "$repo_dir/wallpapers/"* "$HOME/Pictures/wallpapers/" 2>/dev/null || true
+    fi
+
+    # Copy .zshrc
+    if [ -f "$repo_dir/.zshrc" ]; then
+        print_info "Copying .zshrc..."
+        cp "$repo_dir/.zshrc" "$HOME/.zshrc"
+    fi
+
+    print_success "Configurations deployed"
+}
+
+set_permissions() {
+    print_header "Setting Permissions"
+
+    # Make scripts executable
+    print_info "Making scripts executable..."
+    find "$HOME/.config/hypr/scripts" -type f -name "*.sh" -exec chmod +x {} \;
+
+    print_success "Permissions set"
+}
+
+# ============================================================================
+# Post-Installation Setup
+# ============================================================================
+
+post_install_setup() {
+    print_header "Post-Installation Setup"
+
+    # Enable required services
+    print_info "Enabling NetworkManager..."
+    sudo systemctl enable --now NetworkManager
+
+    print_info "Enabling Bluetooth..."
+    sudo systemctl enable --now bluetooth
+
+    # Set Zsh as default shell
+    if [ "$SHELL" != "$(which zsh)" ]; then
+        print_info "Setting Zsh as default shell..."
+        chsh -s $(which zsh)
+        print_success "Default shell changed to Zsh (will take effect on next login)"
+    fi
+
+    # Generate initial theme
+    if [ -f "$HOME/Pictures/wallpapers/37.jpg" ]; then
+        print_info "Generating initial Material Design theme..."
+        matugen image "$HOME/Pictures/wallpapers/37.jpg" 2>/dev/null || true
+    fi
+
+    # Create current_wallpaper symlink if wallpaper exists
+    if [ -f "$HOME/Pictures/wallpapers/37.jpg" ]; then
+        print_info "Setting default wallpaper..."
+        ln -sf "$HOME/Pictures/wallpapers/37.jpg" "$HOME/.config/hypr/current_wallpaper"
+    fi
+
+    print_success "Post-installation setup complete"
+}
+
+# ============================================================================
+# Main Installation Flow
+# ============================================================================
+
+main() {
+    print_header "Arch Hyprland Rice Installation"
+    echo -e "${CYAN}This script will install and configure a complete Hyprland desktop environment${NC}"
+    echo -e "${CYAN}with Material Design 3 theming powered by Matugen.${NC}\n"
+
+    if ! ask_confirmation "Do you want to proceed with the installation?"; then
+        print_warning "Installation cancelled by user"
+        exit 0
+    fi
+
+    # Run installation steps
+    check_system
+    install_yay
+    install_packages
+    clone_repository
+    backup_existing_configs
+    deploy_configs
+    set_permissions
+    post_install_setup
+
+    # Final message
+    print_header "Installation Complete!"
+    echo -e "${GREEN}Your Hyprland rice has been installed successfully!${NC}\n"
+    echo -e "${CYAN}Next steps:${NC}"
+    echo -e "  1. ${YELLOW}Log out${NC} of your current session"
+    echo -e "  2. Select ${YELLOW}Hyprland${NC} from your display manager"
+    echo -e "  3. Log in to your new desktop environment"
+    echo -e ""
+    echo -e "${CYAN}Keybindings:${NC}"
+    echo -e "  • ${YELLOW}SUPER + Q${NC} - Close window"
+    echo -e "  • ${YELLOW}SUPER + ENTER${NC} - Terminal (foot)"
+    echo -e "  • ${YELLOW}SUPER + E${NC} - File manager"
+    echo -e "  • ${YELLOW}SUPER + R${NC} - Application launcher"
+    echo -e "  • ${YELLOW}SUPER + L${NC} - Lock screen"
+    echo -e "  • ${YELLOW}SUPER + [1-5]${NC} - Switch workspace"
+    echo -e "  • ${YELLOW}SUPER + SHIFT + [1-5]${NC} - Move window to workspace"
+    echo -e ""
+    echo -e "${CYAN}Customization:${NC}"
+    echo -e "  • Change wallpaper: ${YELLOW}SUPER + W${NC} (wallpaper picker)"
+    echo -e "  • Waybar styles: ${YELLOW}SUPER + SHIFT + W${NC}"
+    echo -e "  • Power menu: ${YELLOW}wlogout${NC}"
+    echo -e ""
+    if [ -n "$BACKUP_DIR" ]; then
+        echo -e "${YELLOW}Your old configs are backed up at:${NC}"
+        echo -e "${BLUE}$BACKUP_DIR${NC}"
+        echo -e ""
+    fi
+    echo -e "${GREEN}Enjoy your new desktop! 🎨${NC}\n"
+}
+
+# Run the script
+main "$@"
