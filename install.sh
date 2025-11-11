@@ -190,7 +190,7 @@ install_packages() {
         swaync
         wlogout
         colloid-icon-theme-git
-        cava
+        vesktop-bin
     )
 
     print_info "Installing ${#AUR_PACKAGES[@]} AUR packages..."
