@@ -129,7 +129,7 @@ install_packages() {
         
         # Network & Bluetooth
         networkmanager
-        nm-applet
+        network-manager-applet
         bluez
         bluez-utils
         blueman
