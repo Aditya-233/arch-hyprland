@@ -350,11 +350,6 @@ main() {
     echo -e "${CYAN}with Material Design 3 theming powered by Matugen.${NC}\n"
     echo -e "${YELLOW}Total packages to install: 45 (39 official + 6 AUR)${NC}\n"
 
-    if ! ask_confirmation "Do you want to proceed with the installation?"; then
-        print_warning "Installation cancelled by user"
-        exit 0
-    fi
-
     check_system
     install_yay
     install_packages
