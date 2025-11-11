@@ -3,16 +3,11 @@
 # ============================================================================
 # Arch Hyprland Rice Installation Script
 # ============================================================================
-# This script will:
-# 1. Check if running Arch Linux
-# 2. Install all required packages
-# 3. Clone the dotfiles repository
-# 4. Backup existing configs
-# 5. Deploy configurations to proper locations
-# 6. Set up proper permissions
+# Updated: November 2025
+# Total packages: 45 (39 official + 6 AUR)
 # ============================================================================
 
-set -e  # Exit on error
+set -e
 
 # Colors for output
 RED='\033[0;31m'
@@ -21,7 +16,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 MAGENTA='\033[0;35m'
 CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 # Configuration
 REPO_URL="https://github.com/Aditya-233/arch-hyprland.git"
@@ -73,23 +68,20 @@ ask_confirmation() {
 check_system() {
     print_header "System Check"
 
-    # Check if Arch Linux
     if [ ! -f /etc/arch-release ]; then
         print_error "This script is designed for Arch Linux only!"
         exit 1
     fi
     print_success "Arch Linux detected"
 
-    # Check if running as root
     if [ "$EUID" -eq 0 ]; then
         print_error "Please do not run this script as root!"
         exit 1
     fi
     print_success "Running as normal user"
 
-    # Check for required base tools
     if ! command -v git &> /dev/null; then
-        print_warning "Git not found. Will install it first."
+        print_warning "Git not found. Installing..."
         sudo pacman -S --needed --noconfirm git
     fi
     print_success "Git available"
@@ -120,16 +112,16 @@ install_yay() {
 install_packages() {
     print_header "Installing Required Packages"
 
-    # Update system first
     print_info "Updating system..."
     sudo pacman -Syu --noconfirm
 
-    # Official repository packages
+    # Official repository packages (39 packages)
     OFFICIAL_PACKAGES=(
         # Core Hyprland
         hyprland
         hyprlock
         hypridle
+        hyprpolkitagent
         xdg-desktop-portal-hyprland
         xdg-desktop-portal-gtk
 
@@ -145,7 +137,6 @@ install_packages() {
         nautilus
         rofi
         waybar
-        wlogout
 
         # Network & Bluetooth
         networkmanager
@@ -168,6 +159,7 @@ install_packages() {
         wl-clipboard
         cliphist
         rfkill
+        libnotify
 
         # Fonts
         ttf-jetbrains-mono-nerd
@@ -187,23 +179,25 @@ install_packages() {
         base-devel
     )
 
-    print_info "Installing official packages..."
+    print_info "Installing ${#OFFICIAL_PACKAGES[@]} official packages..."
     sudo pacman -S --needed --noconfirm "${OFFICIAL_PACKAGES[@]}"
     print_success "Official packages installed"
 
-    # AUR packages
+    # AUR packages (6 packages)
     AUR_PACKAGES=(
         matugen
         swww
         swaync
-        hyprpolkitagent
+        wlogout
         colloid-icon-theme-git
         cava
     )
 
-    print_info "Installing AUR packages..."
+    print_info "Installing ${#AUR_PACKAGES[@]} AUR packages..."
     yay -S --needed --noconfirm "${AUR_PACKAGES[@]}"
     print_success "AUR packages installed"
+
+    print_success "Total 45 packages installed (39 official + 6 AUR)"
 }
 
 # ============================================================================
@@ -291,17 +285,14 @@ deploy_configs() {
     mkdir -p "$HOME/.config"
     mkdir -p "$HOME/Pictures/wallpapers"
 
-    # Copy .config directories
     print_info "Copying configuration files..."
     cp -r "$repo_dir/.config/"* "$HOME/.config/"
 
-    # Copy wallpapers
     if [ -d "$repo_dir/wallpapers" ]; then
         print_info "Copying wallpapers..."
         cp -r "$repo_dir/wallpapers/"* "$HOME/Pictures/wallpapers/" 2>/dev/null || true
     fi
 
-    # Copy .zshrc
     if [ -f "$repo_dir/.zshrc" ]; then
         print_info "Copying .zshrc..."
         cp "$repo_dir/.zshrc" "$HOME/.zshrc"
@@ -313,7 +304,6 @@ deploy_configs() {
 set_permissions() {
     print_header "Setting Permissions"
 
-    # Make scripts executable
     print_info "Making scripts executable..."
     find "$HOME/.config/hypr/scripts" -type f -name "*.sh" -exec chmod +x {} \;
 
@@ -327,28 +317,22 @@ set_permissions() {
 post_install_setup() {
     print_header "Post-Installation Setup"
 
-    # Enable required services
     print_info "Enabling NetworkManager..."
     sudo systemctl enable --now NetworkManager
 
     print_info "Enabling Bluetooth..."
     sudo systemctl enable --now bluetooth
 
-    # Set Zsh as default shell
     if [ "$SHELL" != "$(which zsh)" ]; then
         print_info "Setting Zsh as default shell..."
         chsh -s $(which zsh)
         print_success "Default shell changed to Zsh (will take effect on next login)"
     fi
 
-    # Generate initial theme
     if [ -f "$HOME/Pictures/wallpapers/37.jpg" ]; then
         print_info "Generating initial Material Design theme..."
         matugen image "$HOME/Pictures/wallpapers/37.jpg" 2>/dev/null || true
-    fi
 
-    # Create current_wallpaper symlink if wallpaper exists
-    if [ -f "$HOME/Pictures/wallpapers/37.jpg" ]; then
         print_info "Setting default wallpaper..."
         ln -sf "$HOME/Pictures/wallpapers/37.jpg" "$HOME/.config/hypr/current_wallpaper"
     fi
@@ -364,13 +348,13 @@ main() {
     print_header "Arch Hyprland Rice Installation"
     echo -e "${CYAN}This script will install and configure a complete Hyprland desktop environment${NC}"
     echo -e "${CYAN}with Material Design 3 theming powered by Matugen.${NC}\n"
+    echo -e "${YELLOW}Total packages to install: 45 (39 official + 6 AUR)${NC}\n"
 
     if ! ask_confirmation "Do you want to proceed with the installation?"; then
         print_warning "Installation cancelled by user"
         exit 0
     fi
 
-    # Run installation steps
     check_system
     install_yay
     install_packages
@@ -380,7 +364,6 @@ main() {
     set_permissions
     post_install_setup
 
-    # Final message
     print_header "Installation Complete!"
     echo -e "${GREEN}Your Hyprland rice has been installed successfully!${NC}\n"
     echo -e "${CYAN}Next steps:${NC}"
@@ -410,5 +393,4 @@ main() {
     echo -e "${GREEN}Enjoy your new desktop! 🎨${NC}\n"
 }
 
-# Run the script
 main "$@"
