@@ -301,17 +301,36 @@ post_install_setup() {
     print_header "Post-Installation Setup"
     
     print_info "Enabling NetworkManager..."
-    sudo systemctl enable --now NetworkManager
+    sudo systemctl enable --now NetworkManager 2>/dev/null
     
     print_info "Enabling Bluetooth..."
-    sudo systemctl enable --now bluetooth
+    sudo systemctl enable --now bluetooth 2>/dev/null
     
-    if [ "$SHELL" != "$(which zsh)" ]; then
+    # Fixed shell changing with better error handling
+    CURRENT_SHELL=$(getent passwd $USER | cut -d: -f7)
+    ZSH_PATH=$(which zsh)
+    
+    if [ "$CURRENT_SHELL" != "$ZSH_PATH" ]; then
         print_info "Setting Zsh as default shell..."
-        chsh -s $(which zsh)
-        print_success "Default shell changed to Zsh (will take effect on next login)"
+        
+        # Try usermod (most reliable for automated scripts)
+        if sudo usermod -s "$ZSH_PATH" "$USER" 2>/dev/null; then
+            print_success "Default shell changed to Zsh (will take effect on next login)"
+        else
+            # Fallback to chsh
+            print_warning "Attempting alternative method..."
+            if echo "$USER:$ZSH_PATH" | sudo chpasswd -e 2>/dev/null; then
+                print_success "Shell changed successfully"
+            else
+                print_warning "Could not change shell automatically"
+                print_warning "Please run manually after installation: chsh -s \$(which zsh)"
+            fi
+        fi
+    else
+        print_info "Zsh is already the default shell"
     fi
     
+    # Generate theme if wallpaper exists
     if [ -f "$HOME/Pictures/wallpapers/37.jpg" ]; then
         print_info "Generating initial Material Design theme..."
         matugen image "$HOME/Pictures/wallpapers/37.jpg" 2>/dev/null || true
